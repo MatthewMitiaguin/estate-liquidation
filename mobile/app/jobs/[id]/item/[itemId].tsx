@@ -1,46 +1,48 @@
 import { View, Text, Pressable, StyleSheet, Image, ScrollView, TextInput } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
-import { useJobs } from "../../../src/context/JobsContext";
-import * as Crypto from "expo-crypto";
+import { useJobs } from "../../../../src/context/JobsContext";
 
 const DISPOSITIONS = ["tbc", "sell", "donate", "keep", "throw", "hold"] as const;
 type Disposition = typeof DISPOSITIONS[number];
 
-export default function ReviewScreen() {
-  const { id, item, photoUri } = useLocalSearchParams<{ id: string; item: string; photoUri: string }>();
-  const parsed = JSON.parse(item);
-  const { addItem } = useJobs();
+export default function EditItemScreen() {
+  const { id, itemId } = useLocalSearchParams<{ id: string; itemId: string }>();
+  const { getJob, updateItem } = useJobs();
+  const job = getJob(id);
+  const item = job?.items.find((i) => i.itemId === itemId);
 
-  const [name, setName] = useState(parsed.name);
-  const [description, setDescription] = useState(parsed.description);
-  const [condition, setCondition] = useState(parsed.condition);
-  const [valueRangeLow, setValueRangeLow] = useState(String(parsed.valueRangeLow));
-  const [valueRangeHigh, setValueRangeHigh] = useState(String(parsed.valueRangeHigh));
-  const [auctionNotes, setAuctionNotes] = useState(parsed.auctionNotes);
-  const [disposition, setDisposition] = useState<Disposition>("tbc");
+  if (!item) return (
+    <View style={styles.container}>
+      <Text>Item not found</Text>
+    </View>
+  );
+
+  const [name, setName] = useState(item.name);
+  const [description, setDescription] = useState(item.description);
+  const [condition, setCondition] = useState(item.condition);
+  const [valueRangeLow, setValueRangeLow] = useState(String(item.valueRangeLow));
+  const [valueRangeHigh, setValueRangeHigh] = useState(String(item.valueRangeHigh));
+  const [auctionNotes, setAuctionNotes] = useState(item.auctionNotes);
+  const [disposition, setDisposition] = useState<Disposition>(item.disposition as Disposition);
 
   const saveItem = () => {
-    addItem(id, {
-      itemId: Crypto.randomUUID(),
+    updateItem(id, {
+      ...item,
       name,
       description,
       condition,
       valueRangeLow: Number(valueRangeLow),
       valueRangeHigh: Number(valueRangeHigh),
-      category: parsed.category,
-      auctionSuitable: parsed.auctionSuitable,
       auctionNotes,
       disposition,
-      photoUri: photoUri,
     });
-    router.back();
     router.back();
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Image source={{ uri: photoUri }} style={styles.photo} />
+      <Image source={{ uri: item.photoUri }} style={styles.photo} />
 
       <Text style={styles.label}>Item name</Text>
       <TextInput style={styles.input} value={name} onChangeText={setName} />
@@ -76,7 +78,7 @@ export default function ReviewScreen() {
       </View>
 
       <Pressable style={styles.btn} onPress={saveItem}>
-        <Text style={styles.btnText}>Save item</Text>
+        <Text style={styles.btnText}>Save changes</Text>
       </Pressable>
     </ScrollView>
   );

@@ -58,20 +58,29 @@ Belongs to a job. Has the following fields:
 - **Anthropic API (Claude)** — vision/LLM processing of photos
 - **PDF generation Lambda** — renders job JSON into a formatted report
 
+## State Management
+- **MVP** — React Context for in-memory state (no persistence, lost on app close)
+- **Post-backend** — Zustand for client state management, handles async API calls, loading and error states cleanly. Redux explicitly avoided — too much boilerplate for this scale.
+
 ## Phases
 
 ### MVP — In Progress
-- Expo app setup
-- Photo capture
-- Claude vision analysis
-- Review and edit screen
-- Save item
-- No auth, no PDF, no voice, no customer portal, no vendor access
+- ✅ Expo app setup
+- ✅ Expo Router wired up
+- ✅ Jobs list screen
+- ✅ Navigation between screens
+- ✅ Camera screen — photo capture
+- ✅ Claude vision API integration
+- ✅ Review and edit screen with disposition tags
+- ⬅️ Local state management — items persist within a session via React Context
+- Job detail screen shows captured items
+- Backend — Terraform + AWS, DynamoDB, S3, Lambdas
 
 ### Phase 2
 - Auth (workers and admin)
 - PDF report generation
-- Jobs list and project management screens
+- Projects and job management screens
+- Swap React Context for Zustand
 
 ### Phase 3
 - Voice notes — OpenAI Whisper preferred over AWS Transcribe for accuracy, especially with Australian English accents
@@ -86,3 +95,4 @@ Belongs to a job. Has the following fields:
 - Future GCP migration is possible — Terraform and the clean JSON structure make this straightforward
 - Canopy (Swift/SwiftUI POC by contractor) informed the Project → Job hierarchy and disposition tag model
 - OpenAI Whisper chosen over AWS Transcribe for Phase 3 voice notes due to superior accuracy on Australian English
+- Zustand preferred over Redux for long term state management — simpler API, less boilerplate, scales well for this app size
