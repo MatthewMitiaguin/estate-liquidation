@@ -9,3 +9,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "lambda_concurrency" {
+  description = "Reserved concurrent executions for the API Lambda. Set to 0 to disable the API entirely (off-switch). Set to -1 (default) for no reservation."
+  type        = number
+  default     = -1
+}

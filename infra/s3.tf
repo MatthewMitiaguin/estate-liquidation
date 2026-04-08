@@ -30,3 +30,27 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "estate_liquidatio
     }
   }
 }
+
+# Auto-expire objects to cap storage runaway from any abuse
+resource "aws_s3_bucket_lifecycle_configuration" "estate_liquidation" {
+  bucket = aws_s3_bucket.estate_liquidation.id
+
+  rule {
+    id     = "expire-objects"
+    status = "Enabled"
+
+    filter {}
+
+    expiration {
+      days = 7
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 1
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 1
+    }
+  }
+}

@@ -58,9 +58,10 @@ echo ""
 
 # Test 4: Create item
 echo -e "${BLUE}Test 4: Creating item...${NC}"
+PHOTO_SIZE=$(stat -f%z test-photo.jpg 2>/dev/null || stat -c%s test-photo.jpg 2>/dev/null || echo 0)
 ITEM_RESPONSE=$(curl -s -X POST "$API_URL/jobs/$JOB_ID/items" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Antique Wooden Chair"}')
+  -d "{\"name\":\"Antique Wooden Chair\",\"contentLength\":$PHOTO_SIZE}")
 
 ITEM_ID=$(echo $ITEM_RESPONSE | jq -r '.itemId')
 UPLOAD_URL=$(echo $ITEM_RESPONSE | jq -r '.uploadUrl')

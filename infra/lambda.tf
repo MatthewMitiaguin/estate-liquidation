@@ -13,6 +13,9 @@ module "lambda_api" {
   timeout       = 120
   memory_size   = 512
 
+  # Off-switch: set var.lambda_concurrency = 0 to disable the API
+  reserved_concurrent_executions = var.lambda_concurrency
+
   # Build settings
   source_path = [
     {
