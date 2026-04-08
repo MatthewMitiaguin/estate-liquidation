@@ -4,7 +4,7 @@ React Native app for estate liquidation field workers. Photograph items during a
 
 ## Prerequisites
 
-- **Node.js v20** — recommended to install via [nvm](https://github.com/nvm-sh/nvm) (Mac/Linux) or [nvm-windows](https://github.com/coreybutler/nvm-windows) (Windows)
+- **Node.js v20** — install via [nvm](https://github.com/nvm-sh/nvm) (`brew install nvm`) or directly via Homebrew (`brew install node@20`) or for Windows [nvm-windows](https://github.com/coreybutler/nvm-windows)
 - **Expo Go** on your iPhone — download from the App Store
 - Your computer and iPhone on the **same WiFi network**
 - An Anthropic API key — get one at [console.anthropic.com](https://console.anthropic.com)
