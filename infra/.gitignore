@@ -1,0 +1,6 @@
+# Lambda build artifacts (terraform-aws-modules/lambda)
+builds/
+lambda/dist/
+lambda/node_modules/
+lambda/lambda.zip
+lambda/*.plan.json

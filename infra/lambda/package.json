@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "esbuild jobs/create.ts jobs/get.ts jobs/list.ts items/create.ts items/analyse.ts items/update.ts --bundle --platform=node --target=node20 --outdir=dist",
+    "build": "esbuild index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --external:@aws-sdk/*",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -15,6 +15,7 @@
     "@aws-sdk/s3-request-presigner": "^3.0.0"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
     "@types/node": "^20.0.0",
     "esbuild": "^0.25.0",
     "typescript": "~5.9.2"
