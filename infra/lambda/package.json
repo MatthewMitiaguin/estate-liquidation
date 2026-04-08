@@ -1,0 +1,22 @@
+{
+  "name": "estate-liquidation-lambda",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild jobs/create.ts jobs/get.ts jobs/list.ts items/create.ts items/analyse.ts items/update.ts --bundle --platform=node --target=node20 --outdir=dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/client-s3": "^3.0.0",
+    "@aws-sdk/client-ssm": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0",
+    "@aws-sdk/s3-request-presigner": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "~5.9.2"
+  }
+}
