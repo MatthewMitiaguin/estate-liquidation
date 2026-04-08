@@ -72,9 +72,13 @@ Belongs to a job. Has the following fields:
 - ✅ Camera screen — photo capture
 - ✅ Claude vision API integration
 - ✅ Review and edit screen with disposition tags
-- ⬅️ Local state management — items persist within a session via React Context
-- Job detail screen shows captured items
-- Backend — Terraform + AWS, DynamoDB, S3, Lambdas
+- ✅ Local state management — React Context
+- ✅ Edit saved items
+- ✅ Backend bootstrap — Terraform + SSM parameter deployed
+- ⬅️ Backend — DynamoDB, S3, Lambdas, API Gateway
+- Connect mobile app to backend API
+- PDF generation
+- Auth
 
 ### Phase 2
 - Auth (workers and admin)
