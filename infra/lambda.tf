@@ -30,7 +30,7 @@ module "lambda_api" {
   environment_variables = {
     TABLE_NAME            = aws_dynamodb_table.estate_liquidation.name
     BUCKET_NAME           = aws_s3_bucket.estate_liquidation.bucket
-    ANTHROPIC_API_KEY_SSM = aws_ssm_parameter.anthropic_api_key.name
+    ANTHROPIC_API_KEY_SSM = data.aws_ssm_parameter.anthropic_api_key.name
   }
 
   # IAM policies
@@ -60,7 +60,7 @@ module "lambda_api" {
       actions = [
         "ssm:GetParameter"
       ]
-      resources = [aws_ssm_parameter.anthropic_api_key.arn]
+      resources = [data.aws_ssm_parameter.anthropic_api_key.arn]
     }
   }
 

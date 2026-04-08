@@ -9,9 +9,3 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
-
-variable "anthropic_api_key" {
-  description = "Anthropic API key for Claude vision"
-  type        = string
-  sensitive   = true
-}
