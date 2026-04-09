@@ -1,20 +1,29 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
-import * as Crypto from "expo-crypto";
 import { useJobs } from "../src/context/JobsContext";
+import { useEffect } from "react";
 
 export default function JobsScreen() {
-  const { jobs, addJob } = useJobs();
+  const { jobs, isLoading, addJob, loadJobs } = useJobs();
 
-  const createJob = () => {
-    const jobId = Crypto.randomUUID();
-    addJob(jobId);
-    router.push(`/jobs/${jobId}`);
+  useEffect(() => {
+    loadJobs();
+  }, []);
+
+  const createJob = async () => {
+    try {
+      const jobId = await addJob("Worker", "New Property");
+      router.push(`/jobs/${jobId}`);
+    } catch (err) {
+      alert("Failed to create job");
+    }
   };
 
   return (
     <View style={styles.container}>
-      {jobs.length === 0 ? (
+      {isLoading ? (
+        <ActivityIndicator style={styles.loader} />
+      ) : jobs.length === 0 ? (
         <Text style={styles.empty}>No jobs yet</Text>
       ) : (
         jobs.map((job) => (
@@ -33,6 +42,7 @@ export default function JobsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, justifyContent: "space-between" },
+  loader: { flex: 1 },
   empty: { color: "#999", textAlign: "center", marginTop: 40 },
   jobCard: { backgroundColor: "#f9f9f9", padding: 16, borderRadius: 10, marginBottom: 10 },
   jobTitle: { fontSize: 16, fontWeight: "600" },

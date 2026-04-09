@@ -1,34 +1,13 @@
 import { View, Text, Pressable, StyleSheet, Image, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import * as FileSystem from "expo-file-system/legacy";
 import { useState } from "react";
-import Anthropic from "@anthropic-ai/sdk";
-
-const client = new Anthropic({
-  apiKey: process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY,
-  dangerouslyAllowBrowser: true,
-});
-
-const PROMPT = `You are an expert estate liquidation appraiser.
-Analyse the provided photo and return a JSON object with exactly these fields:
-{
-  "name": "concise item name",
-  "description": "2-3 sentence factual description",
-  "condition": "excellent|good|fair|poor",
-  "valueRangeLow": 0,
-  "valueRangeHigh": 0,
-  "category": "furniture|art|jewellery|collectibles|electronics|clothing|other",
-  "auctionSuitable": true,
-  "disposition": "tbc",
-  "auctionNotes": "brief note on auction suitability or special considerations"
-}
-Return only valid JSON, no markdown fences.`;
+import { api } from "../../../src/api/client";
 
 export default function CaptureScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [analysing, setAnalysing] = useState(false);
+  const [stage, setStage] = useState<"idle" | "uploading" | "analysing">("idle");
 
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -44,43 +23,41 @@ export default function CaptureScreen() {
 
   const analyseItem = async () => {
     if (!photoUri) return;
-    setAnalysing(true);
     try {
-    const base64 = await FileSystem.readAsStringAsync(photoUri, {
-    encoding: "base64",
-    });
+      setStage("uploading");
 
-      const response = await client.messages.create({
-        model: "claude-opus-4-6",
-        max_tokens: 1024,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                source: { type: "base64", media_type: "image/jpeg", data: base64 },
-              },
-              { type: "text", text: PROMPT },
-            ],
-          },
-        ],
-      });
+      // 1. Register item and get presigned S3 URL
+      const response = await fetch(photoUri);
+      const blob = await response.blob();
+      const contentLength = blob.size;
+      const { itemId, uploadUrl } = await api.createItem(id, contentLength) as { itemId: string; uploadUrl: string };
+      console.log("uploadUrl:", uploadUrl);
+      console.log("itemId:", itemId);
 
-      const text = response.content[0].type === "text" ? response.content[0].text : "";
-      const cleaned = text.replace(/```json\n?|\```/g, "").trim();
-      const result = JSON.parse(cleaned);
+      // 2. Upload photo directly to S3
+      await api.uploadPhoto(uploadUrl, photoUri);
+
+      // 3. Trigger Claude analysis
+      setStage("analysing");
+      const result = await api.analyseItem(id, itemId) as any;
+
+      // 4. Navigate to review screen with result
       router.push({
         pathname: `/jobs/${id}/review`,
-        params: { item: JSON.stringify(result), photoUri },
+        params: {
+          item: JSON.stringify({ ...result, itemId }),
+          photoUri,
+        },
       });
     } catch (err) {
       alert("Analysis failed, please try again");
       console.error(err);
     } finally {
-      setAnalysing(false);
+      setStage("idle");
     }
   };
+
+  const loadingText = stage === "uploading" ? "Uploading photo..." : "Analysing with AI...";
 
   return (
     <View style={styles.container}>
@@ -92,13 +69,16 @@ export default function CaptureScreen() {
           <Text style={styles.photoText}>Tap to take photo</Text>
         </Pressable>
       )}
-      <Pressable style={styles.btn} onPress={takePhoto}>
+      <Pressable style={styles.btn} onPress={takePhoto} disabled={stage !== "idle"}>
         <Text style={styles.btnText}>{photoUri ? "Retake photo" : "Take photo"}</Text>
       </Pressable>
       {photoUri && (
-        <Pressable style={[styles.btn, styles.analyseBtn]} onPress={analyseItem} disabled={analysing}>
-          {analysing ? (
-            <ActivityIndicator color="#fff" />
+        <Pressable style={[styles.btn, styles.analyseBtn]} onPress={analyseItem} disabled={stage !== "idle"}>
+          {stage !== "idle" ? (
+            <View style={styles.loadingRow}>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.btnText}>{loadingText}</Text>
+            </View>
           ) : (
             <Text style={styles.btnText}>Analyse item</Text>
           )}
@@ -117,4 +97,5 @@ const styles = StyleSheet.create({
   btn: { backgroundColor: "#1a1a2e", padding: 16, borderRadius: 10, alignItems: "center" },
   analyseBtn: { backgroundColor: "#2e7d32", marginTop: 8 },
   btnText: { color: "#fff", fontWeight: "600", fontSize: 16 },
+  loadingRow: { flexDirection: "row", alignItems: "center", gap: 10 },
 });

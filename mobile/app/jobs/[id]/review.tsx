@@ -1,8 +1,9 @@
-import { View, Text, Pressable, StyleSheet, Image, ScrollView, TextInput } from "react-native";
+import { View, Text, Pressable, StyleSheet, Image, ScrollView, TextInput, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
 import { useJobs } from "../../../src/context/JobsContext";
 import * as Crypto from "expo-crypto";
+import { api } from "../../../src/api/client";
 
 const DISPOSITIONS = ["tbc", "sell", "donate", "keep", "throw", "hold"] as const;
 type Disposition = typeof DISPOSITIONS[number];
@@ -11,6 +12,7 @@ export default function ReviewScreen() {
   const { id, item, photoUri } = useLocalSearchParams<{ id: string; item: string; photoUri: string }>();
   const parsed = JSON.parse(item);
   const { addItem } = useJobs();
+  const [isSaving, setIsSaving] = useState(false);
 
   const [name, setName] = useState(parsed.name);
   const [description, setDescription] = useState(parsed.description);
@@ -20,22 +22,33 @@ export default function ReviewScreen() {
   const [auctionNotes, setAuctionNotes] = useState(parsed.auctionNotes);
   const [disposition, setDisposition] = useState<Disposition>("tbc");
 
-  const saveItem = () => {
-    addItem(id, {
-      itemId: Crypto.randomUUID(),
-      name,
-      description,
-      condition,
-      valueRangeLow: Number(valueRangeLow),
-      valueRangeHigh: Number(valueRangeHigh),
-      category: parsed.category,
-      auctionSuitable: parsed.auctionSuitable,
-      auctionNotes,
-      disposition,
-      photoUri: photoUri,
-    });
-    router.back();
-    router.back();
+  const saveItem = async () => {
+    setIsSaving(true);
+    try {
+      const itemData = {
+        itemId: parsed.itemId ?? Crypto.randomUUID(),
+        name,
+        description,
+        condition,
+        valueRangeLow: Number(valueRangeLow),
+        valueRangeHigh: Number(valueRangeHigh),
+        category: parsed.category,
+        auctionSuitable: parsed.auctionSuitable,
+        auctionNotes,
+        disposition,
+        photoUri,
+      };
+
+      await api.updateItem(id, itemData.itemId, itemData);
+      addItem(id, itemData);
+      router.back();
+      router.back();
+    } catch (err) {
+      alert("Failed to save item, please try again");
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -75,8 +88,12 @@ export default function ReviewScreen() {
         ))}
       </View>
 
-      <Pressable style={styles.btn} onPress={saveItem}>
-        <Text style={styles.btnText}>Save item</Text>
+      <Pressable style={styles.btn} onPress={saveItem} disabled={isSaving}>
+        {isSaving ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.btnText}>Save item</Text>
+        )}
       </Pressable>
     </ScrollView>
   );
