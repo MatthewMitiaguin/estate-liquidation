@@ -4,7 +4,7 @@ import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
 const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 const TABLE = process.env.TABLE_NAME!;
 
-export const handler = async () => {
+export const handler = async (_event: unknown) => {
   const result = await dynamo.send(
     new ScanCommand({
       TableName: TABLE,

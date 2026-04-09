@@ -1,10 +1,25 @@
 import type { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
+import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { handler as createJob } from "./jobs/create";
 import { handler as getJob } from "./jobs/get";
 import { handler as listJobs } from "./jobs/list";
 import { handler as createItem } from "./items/create";
 import { handler as analyseItem } from "./items/analyse";
 import { handler as updateItem } from "./items/update";
+
+const ssm = new SSMClient({});
+const API_TOKEN_SSM = process.env.API_TOKEN_SSM!;
+
+// Cached promise so concurrent invocations during cold start share one fetch
+let apiTokenPromise: Promise<string> | null = null;
+function getApiToken(): Promise<string> {
+  if (!apiTokenPromise) {
+    apiTokenPromise = ssm
+      .send(new GetParameterCommand({ Name: API_TOKEN_SSM, WithDecryption: true }))
+      .then((r) => r.Parameter!.Value!);
+  }
+  return apiTokenPromise;
+}
 
 export const handler = async (
   event: APIGatewayProxyEventV2
@@ -14,6 +29,18 @@ export const handler = async (
   const path = requestContext.http.path;
 
   console.log(`${method} ${path}`, { pathParameters });
+
+  // Auth: shared bearer token. APIG v2 handles CORS preflight before Lambda,
+  // so OPTIONS requests never reach here.
+  const authHeader = event.headers?.authorization ?? event.headers?.Authorization;
+  const expected = `Bearer ${await getApiToken()}`;
+  if (authHeader !== expected) {
+    return {
+      statusCode: 401,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ error: "Unauthorized" }),
+    };
+  }
 
   try {
     // POST /jobs

@@ -22,6 +22,21 @@ if [ -z "$API_URL" ]; then
   exit 1
 fi
 
+# Get API token from SSM
+API_TOKEN=$(aws ssm get-parameter \
+  --name /estate-liquidation/dev/api-token \
+  --with-decryption \
+  --query Parameter.Value \
+  --output text 2>/dev/null)
+
+if [ -z "$API_TOKEN" ]; then
+  echo -e "${RED}Error: Could not read /estate-liquidation/dev/api-token from SSM${NC}"
+  echo "Create the SecureString parameter in the AWS console first"
+  exit 1
+fi
+
+AUTH_HEADER="Authorization: Bearer $API_TOKEN"
+
 echo "API Endpoint: $API_URL"
 echo ""
 
@@ -29,6 +44,7 @@ echo ""
 echo -e "${BLUE}Test 1: Creating job...${NC}"
 JOB_RESPONSE=$(curl -s -X POST "$API_URL/jobs" \
   -H "Content-Type: application/json" \
+  -H "$AUTH_HEADER" \
   -d '{"workerName":"Test Worker","address":"123 Test Street, Sydney"}')
 
 JOB_ID=$(echo $JOB_RESPONSE | jq -r '.jobId')
@@ -44,14 +60,14 @@ echo ""
 
 # Test 2: Get job
 echo -e "${BLUE}Test 2: Getting job...${NC}"
-GET_JOB_RESPONSE=$(curl -s "$API_URL/jobs/$JOB_ID")
+GET_JOB_RESPONSE=$(curl -s -H "$AUTH_HEADER" "$API_URL/jobs/$JOB_ID")
 echo "$GET_JOB_RESPONSE" | jq '.'
 echo -e "${GREEN}✓ Job retrieved successfully${NC}"
 echo ""
 
 # Test 3: List all jobs
 echo -e "${BLUE}Test 3: Listing all jobs...${NC}"
-LIST_RESPONSE=$(curl -s "$API_URL/jobs")
+LIST_RESPONSE=$(curl -s -H "$AUTH_HEADER" "$API_URL/jobs")
 JOB_COUNT=$(echo $LIST_RESPONSE | jq 'length')
 echo -e "${GREEN}✓ Found $JOB_COUNT job(s)${NC}"
 echo ""
@@ -61,6 +77,7 @@ echo -e "${BLUE}Test 4: Creating item...${NC}"
 PHOTO_SIZE=$(stat -f%z test-photo.jpg 2>/dev/null || stat -c%s test-photo.jpg 2>/dev/null || echo 0)
 ITEM_RESPONSE=$(curl -s -X POST "$API_URL/jobs/$JOB_ID/items" \
   -H "Content-Type: application/json" \
+  -H "$AUTH_HEADER" \
   -d "{\"name\":\"Antique Wooden Chair\",\"contentLength\":$PHOTO_SIZE}")
 
 ITEM_ID=$(echo $ITEM_RESPONSE | jq -r '.itemId')
@@ -92,7 +109,7 @@ if [ -f "test-photo.jpg" ]; then
     # Test 6: Analyze item
     echo -e "${BLUE}Test 6: Analyzing item with Claude Vision...${NC}"
     echo "(This may take 10-30 seconds...)"
-    ANALYZE_RESPONSE=$(curl -s -X POST "$API_URL/jobs/$JOB_ID/items/$ITEM_ID/analyse")
+    ANALYZE_RESPONSE=$(curl -s -X POST -H "$AUTH_HEADER" "$API_URL/jobs/$JOB_ID/items/$ITEM_ID/analyse")
     
     ITEM_NAME=$(echo $ANALYZE_RESPONSE | jq -r '.name')
     
@@ -119,6 +136,7 @@ fi
 echo -e "${BLUE}Test 7: Updating item disposition...${NC}"
 UPDATE_RESPONSE=$(curl -s -X PATCH "$API_URL/jobs/$JOB_ID/items/$ITEM_ID" \
   -H "Content-Type: application/json" \
+  -H "$AUTH_HEADER" \
   -d '{"disposition":"sell","notes":"Beautiful vintage piece, excellent condition"}')
 
 DISPOSITION=$(echo $UPDATE_RESPONSE | jq -r '.disposition')
@@ -133,7 +151,7 @@ fi
 
 # Test 8: Get job with items
 echo -e "${BLUE}Test 8: Getting job with all items...${NC}"
-FINAL_JOB=$(curl -s "$API_URL/jobs/$JOB_ID")
+FINAL_JOB=$(curl -s -H "$AUTH_HEADER" "$API_URL/jobs/$JOB_ID")
 ITEM_COUNT=$(echo $FINAL_JOB | jq '.items | length')
 echo -e "${GREEN}✓ Job has $ITEM_COUNT item(s)${NC}"
 echo ""
