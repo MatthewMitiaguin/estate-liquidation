@@ -54,3 +54,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "estate_liquidation" {
     }
   }
 }
+
+resource "aws_s3_bucket_cors_configuration" "estate_liquidation" {
+  bucket = aws_s3_bucket.estate_liquidation.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT", "GET"]
+    allowed_origins = ["*"]
+    max_age_seconds = 3000
+  }
+}
